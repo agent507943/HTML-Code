@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login Page</title>
+    <style>
+        body {
+            background-color: white;
+            color: black;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 55%; /* Increased the width by 30% */
+            margin: 20px;
+            padding: 20px;
+            border: 2px solid green;
+            background-color: yellow;
+            text-align: center;
+            box-sizing: border-box;
+        }
+        h2 {
+            color: green;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 2px solid green;
+            border-radius: 5px;
+            max-width: 300px;
+        }
+        input[type="submit"] {
+            background-color: green;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        a {
+            text-decoration: none;
+            color: blue;
+            display: block;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Login</h2>
+        <form method="POST" action="/login">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required><br><br>
+            
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required><br><br>
+
+            <input type="submit" value="Login">
+        </form>
+    </div>
+
+    <!-- Moved the hyperlinks outside of the container -->
+    <a href="#">https://www.deere.com/en/</a>
+    <a href="#">https://www.microsoft.com/en-us/</a>
+    <a href="#">https://shop.deere.com/us/Merchandise-Workshop/Seasonal-Sale/cl/c/SeasonalSale/</a>
+</body>
+</html>
