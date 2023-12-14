@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Checkout</title>
+</head>
+<body>
+    <h1>Checkout</h1>
+    <h2>Cart Items:</h2>
+    <ul>
+        {% for item in cart %}
+            <li>{{ item['name'] }} - ${{ item['price'] }}</li>
+        {% endfor %}
+    </ul>
+    <h2>Total Price: ${{ total_price }}</h2>
+    <a href="{{ url_for('clear_cart') }}">Clear Cart</a>
+</body>
+</html>
