@@ -1,0 +1,153 @@
+<!-- AI-Assisted -->
+{% extends "base.html" %}
+
+{% block title %}Server Admin Page{% endblock %}
+
+{% block content %}
+  <div class="table-responsive">
+    <table class="table table-striped table-bordered table-hover">
+      <caption>Servers</caption>
+      <thead>
+        <tr>
+          <th scope="col">VM Name</th>
+          <th scope="col">Site Name</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for vm_name, server_info in data.items() %}
+          <tr>
+            <td>{{ vm_name }}</td>
+            <td>{{ server_info.cluster }}</td>
+            <td>
+              <select class="actions-dropdown" data-vm-name="{{ vm_name }}" data-vm-uuid="{{ server_info.uuid }}" data-vm-pc="{{server_info.pc}}" onchange="UserAction(this)">
+                <option value="">Select action</option>
+                <option value="reboot">Reboot Server</option>
+              </select>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div
+  class="modal"
+  tabindex="-1"
+  id="rebootDialog"
+  style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; background: white; padding: 20px; border: 1px solid #ccc; width: 400px;">
+  <h4>Reboot Server</h4>
+  <p class="alert alert-warning">NOTICE: This administrative action can impact production and should only be used during emergency scenarios. Rebooting a VM with this method does not guarantee a graceful shutdown.</p>
+  <p>VM Name: <span id="rebootVmName"></span></p>
+  <form id="rebootForm">
+    <div>
+      <label for="incidentNum">Incident number (optional):</label>
+      <input type="text" id="incidentNum" />
+    </div>
+    <div>
+      <label for="reason">Reason (required):</label>
+      <textarea
+        id="reason"
+        required
+        oninvalid="this.setCustomValidity('Reason field is required')"
+        oninput="this.setCustomValidity('')"
+        style="width: 100%; height: 150px; font-size: 16px; padding: 2px;"
+      ></textarea>
+      <input type="hidden" id="vmUUID">
+      <input type="hidden" id="vmPC">
+    </div>
+    <button type="submit">Submit</button>
+    <button type="button" onclick="closeRebootPrompt()">Cancel</button>
+  </form>
+</div>
+
+<script>
+    function displayRebootPrompt(vmName, vmUUID, vmPC) {
+        document.getElementById('rebootVmName').textContent = vmName;
+        document.getElementById('vmUUID').value = vmUUID;
+        document.getElementById('vmPC').value = vmPC;
+        document.getElementById('rebootDialog').style.display = 'block';
+    }
+
+    function closeRebootPrompt() {
+        document.getElementById('rebootDialog').style.display = 'none';
+    }
+
+    function UserAction(elem) {
+        const action = elem.value;
+        const vmName = elem.getAttribute('data-vm-name');
+        const vmUUID = elem.getAttribute('data-vm-uuid');
+        const vmPC = elem.getAttribute('data-vm-pc');
+        if (action === 'reboot') {
+        displayRebootPrompt(vmName, vmUUID, vmPC);
+        }
+    }
+
+    async function restartRemoteMachine(incidentNum, reason, vmUUID, vmPC) {
+        const vmName = document.getElementById('rebootVmName').textContent;
+        fetch('/self-service/vm_reboot', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            pc: vmPC,
+            vmUUID,
+            incidentNum,
+            reason,
+            vmName,
+        }),
+        })
+        .then((response) => response.json())
+        .then((data) => alert(data.message))
+        .catch((error) => alert('Error: ' + error));
+    }
+
+    function UserSubmit(event) {
+        event.preventDefault();
+        
+        const incidentNum = document.getElementById('incidentNum').value;
+        const reason = document.getElementById('reason').value;
+        const vmUUID = document.getElementById('vmUUID').value;
+        const vmPC = document.getElementById('vmPC').value;
+        
+        if (!reason.trim()) {
+        alert('Reason is required.');
+        return;
+        }
+
+        restartRemoteMachine(incidentNum, reason, vmUUID, vmPC);
+        closeRebootPrompt();
+    }
+
+    const form = document.getElementById('rebootForm');
+    form.addEventListener('submit', UserSubmit);
+</script>
+{% endblock %}
+
+<!--The button that displays failure or success based on function call-->
+<title>Task Status</title>
+<style>
+  .statusButton {
+    padding: 10px 20px:
+    font-size: 16px:
+    color: black: /* Text color */
+    border: none:
+    cursor: pointer:
+  }
+  .success {
+    background-color: #4CAF50; /* Green */
+  }
+  .failure {
+    background-color: #f44336;/* Red */
+  }
+</style>
+</head>
+<body>
+
+  <button id=""taskStatusButton" class="statusButton" onclick="checkTask()">check_task</button>
+
+  <script>
+    
+  </script>
+</body>
