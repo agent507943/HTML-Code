@@ -31,6 +31,8 @@
     </table>
   </div>
 
+  <button id="checkTaskBtn" class="btn btn-primary">Check Task Status</button>
+
   <div
   class="modal"
   tabindex="-1"
@@ -122,6 +124,30 @@
 
     const form = document.getElementById('rebootForm');
     form.addEventListener('submit', UserSubmit);
+
+  document.getElementById('checkTaskBtn').addEventListener('click', function() {
+    fetch('/self-service/check_task_status', { 
+        method: 'GET', 
+    })
+    .then(response => response.json())
+    .then(data => {
+        const btn = document.getElementById('checkTaskBtn');
+        if (data.success) { // Assuming the response includes a success field indicating the result
+            btn.textContent = 'Success';
+            btn.className = 'btn btn-success'; // Changes button to green
+        } else {
+            btn.textContent = 'Failure';
+            btn.className = 'btn btn-danger'; // Changes button to red
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        const btn = document.getElementById('checkTaskBtn');
+        btn.textContent = 'Error'; // Indicates an error occurred
+        btn.className = 'btn btn-warning'; // Optional: Changes button to another color, e.g., yellow
+    });
+});
+
 </script>
 {% endblock %}
 
