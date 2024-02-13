@@ -1,0 +1,47 @@
+async function updateTaskStatusForAllVMs() {
+    // Example logic for iterating over VMs and updating status
+    document.querySelectorAll('.actions-dropdown').forEach(async (elem) => {
+        const vmUUID = elem.getAttribute('data-vm-uuid');
+        const vmPC = elem.getAttribute('data-vm-pc');
+        // Assuming a mechanism to retrieve a task UUID for each VM
+        // This example simplifies and assumes taskUUID is available
+        const taskUUID = '...'; // Placeholder, need actual logic to get taskUUID
+        
+        updateTaskStatus(taskUUID, vmPC); // Update status for this VM
+    });
+    
+    // Refresh the page every 1 second to update statuses
+    setInterval(() => {
+        updateTaskStatusForAllVMs();
+    }, 1000);
+}
+
+
+async function restartRemoteMachine(incidentNum, reason, vmUUID, vmPC) {
+    const vmName = document.getElementById('rebootVmName').textContent;
+    fetch('/self-service/vm_reboot', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            pc: vmPC,
+            vmUUID,
+            incidentNum,
+            reason,
+            vmName,
+        }),
+    })
+    .then((response) => response.json())
+    .then((data) => {
+        if(data.message.startsWith('Reboot Task Scheduled Successfully')) {
+            // Show prompt to user
+            if(confirm(data.message + "\nClick OK to monitor task status.")) {
+                updateTaskStatusForAllVMs(); // Call to update statuses for all VMs
+            }
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch((error) => alert('Error: ' + error));
+}
