@@ -1,0 +1,8 @@
+async function updateTaskStatus(taskUUID, pc) {
+  // Make a GET request to the task_check function
+  const response = await fetch(`/self-service/task_check?task_uuid=${taskUUID}&pc=${pc}`);
+  const data = await response.json(); // Assuming the response is in JSON format
+
+  // Display the task status in the taskStatusBox element on the server_admin page
+  document.getElementById('taskStatusBox').innerText = `Task status: ${data.message}`;
+}
