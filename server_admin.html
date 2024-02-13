@@ -31,7 +31,7 @@
     </table>
   </div>
 
-  <button id="checkTaskBtn" class="btn btn-primary">Check Task Status</button>
+  <div id="taskStatusBox"></div>
 
   <div
   class="modal"
@@ -64,6 +64,39 @@
 </div>
 
 <script>
+// Define the function to update task status
+async function updateTaskStatus(taskUUID, pc) {
+  try {
+    const response = await fetch(`/self-service/task_check?task_uuid=${taskUUID}&pc=${pc}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+
+    const data = await response.json();
+    console.log('Task status: ' + data.message);
+    // Display the task status in the taskStatusBox
+    document.getElementById('taskStatusBox').innerText = 'Task status: ' + data.message;
+    // Update your UI or take action based on the task status
+  } catch (error) {
+    console.error('Error: ' + error);
+    // Display the error in the taskStatusBox
+    document.getElementById('taskStatusBox').innerText = 'Error: ' + error;
+  }
+}
+
+
+    // Call the updateTaskStatus function every 1 second
+    setInterval(async () => {
+      await updateTaskStatus(taskUUID, pc);
+    }, 1000);
+
+
     function displayRebootPrompt(vmName, vmUUID, vmPC) {
         document.getElementById('rebootVmName').textContent = vmName;
         document.getElementById('vmUUID').value = vmUUID;
@@ -85,6 +118,7 @@
         }
     }
 
+
     async function restartRemoteMachine(incidentNum, reason, vmUUID, vmPC) {
         const vmName = document.getElementById('rebootVmName').textContent;
         fetch('/self-service/vm_reboot', {
@@ -105,75 +139,43 @@
         .catch((error) => alert('Error: ' + error));
     }
 
-    function UserSubmit(event) {
-        event.preventDefault();
-        
-        const incidentNum = document.getElementById('incidentNum').value;
-        const reason = document.getElementById('reason').value;
-        const vmUUID = document.getElementById('vmUUID').value;
-        const vmPC = document.getElementById('vmPC').value;
-        
-        if (!reason.trim()) {
-        alert('Reason is required.');
-        return;
-        }
-
-        restartRemoteMachine(incidentNum, reason, vmUUID, vmPC);
-        closeRebootPrompt();
+  function UserSubmit(event) {
+    event.preventDefault();
+    
+    const incidentNum = document.getElementById('incidentNum').value;
+    const reason = document.getElementById('reason').value;
+    const vmUUID = document.getElementById('vmUUID').value;
+    const vmPC = document.getElementById('vmPC').value;
+    
+    if (!reason.trim()) {
+      alert('Reason is required.');
+      return;
     }
 
-    const form = document.getElementById('rebootForm');
-    form.addEventListener('submit', UserSubmit);
-
-  document.getElementById('checkTaskBtn').addEventListener('click', function() {
-    fetch('/self-service/check_task_status', { 
-        method: 'GET', 
-    })
-    .then(response => response.json())
-    .then(data => {
-        const btn = document.getElementById('checkTaskBtn');
-        if (data.success) { // Assuming the response includes a success field indicating the result
-            btn.textContent = 'Success';
-            btn.className = 'btn btn-success'; // Changes button to green
+    restartRemoteMachine(incidentNum, reason, vmUUID, vmPC)
+      .then(data => {
+        if (data.message.startsWith('Reboot Task Scheduled Successfully')) {
+          const taskUUID = data.message.split('Task UUID: ')[1];
+          updateTaskStatus(taskUUID, vmPC)
+          print(updateTaskStatus)
+          return updateTaskStatus(taskUUID, vmPC);
         } else {
-            btn.textContent = 'Failure';
-            btn.className = 'btn btn-danger'; // Changes button to red
+          throw new Error('Failed to schedule reboot task');
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        const btn = document.getElementById('checkTaskBtn');
-        btn.textContent = 'Error'; // Indicates an error occurred
-        btn.className = 'btn btn-warning'; // Optional: Changes button to another color, e.g., yellow
-    });
-});
+      })
+      .then(() => {
+        console.log('Task status updated successfully');
+      })
+      .catch(error => {
+        console.error('Error: ' + error);
+        // Display the error in the taskStatusBox
+        document.getElementById('taskStatusBox').innerText = 'Error: ' + error;
+      });
 
+  closeRebootPrompt();
+}
+
+const form = document.getElementById('rebootForm');
+form.addEventListener('submit', UserSubmit);
 </script>
 {% endblock %}
-
-<!--The button that displays failure or success based on function call-->
-<title>Task Status</title>
-<style>
-  .statusButton {
-    padding: 10px 20px:
-    font-size: 16px:
-    color: black: /* Text color */
-    border: none:
-    cursor: pointer:
-  }
-  .success {
-    background-color: #4CAF50; /* Green */
-  }
-  .failure {
-    background-color: #f44336;/* Red */
-  }
-</style>
-</head>
-<body>
-
-  <button id=""taskStatusButton" class="statusButton" onclick="checkTask()">check_task</button>
-
-  <script>
-    
-  </script>
-</body>
