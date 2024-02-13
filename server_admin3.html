@@ -4,40 +4,36 @@
 {% block title %}Server Admin Page{% endblock %}
 
 {% block content %}
-  <div class="table-responsive">
-    <table class="table table-striped table-bordered table-hover">
-      <caption>Servers</caption>
-      <thead>
-        <tr>
-          <th scope="col">VM Name</th>
-          <th scope="col">Site Name</th>
-          <th scope="col">Actions</th>
-          <th scope="col">Task Status</th> <!-- New Task Status Header -->
-        </tr>
-      </thead>
-      <tbody>
-        {% for vm_name, server_info in data.items() %}
-          <tr>
-            <td>{{ vm_name }}</td>
-            <td>{{ server_info.cluster }}</td>
-            <td>
-              <select class="actions-dropdown" data-vm-name="{{ vm_name }}" data-vm-uuid="{{ server_info.uuid }}" data-vm-pc="{{server_info.pc}}" onchange="UserAction(this)">
-                <option value="">Select action</option>
-                <option value="reboot">Reboot Server</option>
-              </select>
-            </td>
-            <td id="taskStatus-{{ server_info.uuid }}">Awaiting reboot request...</td> <!-- Placeholder for Task Status -->
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+<div class="table-responsive">
+  <table class="table table-striped table-bordered table-hover">
+    <caption>Servers</caption>
+    <thead>
+      <tr>
+        <th scope="col">VM Name</th>
+        <th scope="col">Site Name</th>
+        <th scope="col">Actions</th>
+        <th scope="col">Task Status</th> <!-- New Task Status Header -->
+      </tr>
+    </thead>
+    <tbody>
+      {% for vm_name, server_info in data.items() %}
+      <tr>
+        <td>{{ vm_name }}</td>
+        <td>{{ server_info.cluster }}</td>
+        <td>
+          <select class="actions-dropdown" data-vm-name="{{ vm_name }}" data-vm-uuid="{{ server_info.uuid }}" data-vm-pc="{{server_info.pc}}" onchange="UserAction(this)">
+            <option value="">Select action</option>
+            <option value="reboot">Reboot Server</option>
+          </select>
+        </td>
+        <td id="taskStatus-{{ server_info.uuid }}">Awaiting reboot request...</td> <!-- Placeholder for Task Status -->
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
-  <div
-  class="modal"
-  tabindex="-1"
-  id="rebootDialog"
-  style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; background: white; padding: 20px; border: 1px solid #ccc; width: 400px;">
+<div class="modal" tabindex="-1" id="rebootDialog" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; background: white; padding: 20px; border: 1px solid #ccc; width: 400px;">
   <h4>Reboot Server</h4>
   <p class="alert alert-warning">NOTICE: This administrative action can impact production and should only be used during emergency scenarios. Rebooting a VM with this method does not guarantee a graceful shutdown.</p>
   <p>VM Name: <span id="rebootVmName"></span></p>
@@ -48,13 +44,7 @@
     </div>
     <div>
       <label for="reason">Reason (required):</label>
-      <textarea
-        id="reason"
-        required
-        oninvalid="this.setCustomValidity('Reason field is required')"
-        oninput="this.setCustomValidity('')"
-        style="width: 100%; height: 150px; font-size: 16px; padding: 2px;"
-      ></textarea>
+      <textarea id="reason" required oninvalid="this.setCustomValidity('Reason field is required')" oninput="this.setCustomValidity('')" style="width: 100%; height: 150px; font-size: 16px; padding: 2px;"></textarea>
       <input type="hidden" id="vmUUID">
       <input type="hidden" id="vmPC">
     </div>
@@ -64,98 +54,84 @@
 </div>
 
 <script>
-    // Place JavaScript code here
-    async function refreshPageEverySecond(){
-      setInterval(function() {
-        location.reload();
-      }, 1000); 
+function refreshPageEverySecond() {
+  setInterval(function() {
+    location.reload();
+  }, 1000); // 1000 milliseconds = 1 second
+}
+
+// Call refreshPageEverySecond to ensure updates are displayed timely
+refreshPageEverySecond();
+
+async function updateTaskStatus(taskUUID, pc) {
+  const response = await fetch(`/self-service/task_check?task_uuid=${taskUUID}&pc=${pc}`);
+  const data = await response.json();
+  document.getElementById(`taskStatus-${taskUUID}`).innerText = `Task status: ${data.message}`;
+}
+
+function displayRebootPrompt(vmName, vmUUID, vmPC) {
+  document.getElementById('rebootVmName').textContent = vmName;
+  document.getElementById('vmUUID').value = vmUUID;
+  document.getElementById('vmPC').value = vmPC;
+  document.getElementById('rebootDialog').style.display = 'block';
+}
+
+function closeRebootPrompt() {
+  document.getElementById('rebootDialog').style.display = 'none';
+}
+
+function UserAction(elem) {
+  const action = elem.value;
+  const vmName = elem.getAttribute('data-vm-name');
+  const vmUUID = elem.getAttribute('data-vm-uuid');
+  const vmPC = elem.getAttribute('data-vm-pc');
+  if (action === 'reboot') {
+    displayRebootPrompt(vmName, vmUUID, vmPC);
+  }
+}
+
+async function restartRemoteMachine(incidentNum, reason, vmUUID, vmPC) {
+  const vmName = document.getElementById('rebootVmName').textContent;
+  await fetch('/self-service/vm_reboot', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      pc: vmPC,
+      vmUUID,
+      incidentNum,
+      reason,
+      vmName,
+    }),
+  })
+  .then((response) => response.json())
+  .then((data) => {
+    alert(data.message);
+    if (data.message.startsWith('Reboot Task Scheduled Successfully')) {
+      const taskUUID = data.message.split('Task UUID: ')[1];
+      updateTaskStatus(taskUUID, vmPC);
     }
-    // Define the function to update task status
-    async function updateTaskStatus(taskUUID, pc) {
-        //Make a Get request to the task_check function
-        const response = await fetch(`/self-service/task_check?task_uuid=${taskUUID}&pc=${pc}`);
-        const data = await response.json(); // Requires JSON format in output.
-        //Display the task_status in the taskStatusBox element on the server admin page
-        document.getElementById('taskStatusBox').innerText = `Task status: ${data.message}`
-        // This code is what starts the refresh of this function.
-    
-    
-        function displayRebootPrompt(vmName, vmUUID, vmPC) {
-            document.getElementById('rebootVmName').textContent = vmName;
-            document.getElementById('vmUUID').value = vmUUID;
-            document.getElementById('vmPC').value = vmPC;
-            document.getElementById('rebootDialog').style.display = 'block';
-        }
-    
-        function closeRebootPrompt() {
-            document.getElementById('rebootDialog').style.display = 'none';
-        }
-    
-        function UserAction(elem) {
-            const action = elem.value;
-            const vmName = elem.getAttribute('data-vm-name');
-            const vmUUID = elem.getAttribute('data-vm-uuid');
-            const vmPC = elem.getAttribute('data-vm-pc');
-            if (action === 'reboot') {
-            displayRebootPrompt(vmName, vmUUID, vmPC);
-            }
-        }
-    
-    
-        async function restartRemoteMachine(incidentNum, reason, vmUUID, vmPC) {
-            const vmName = document.getElementById('rebootVmName').textContent;
-            fetch('/self-service/vm_reboot', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                pc: vmPC,
-                vmUUID,
-                incidentNum,
-                reason,
-                vmName,
-            }),
-            })
-            .then((response) => response.json())
-            .then((data) => alert(data.message))
-            .catch((error) => alert('Error: ' + error));
-        }
-    
-      function UserSubmit(event) {
-        event.preventDefault();
-        
-        const incidentNum = document.getElementById('incidentNum').value;
-        const reason = document.getElementById('reason').value;
-        const vmUUID = document.getElementById('vmUUID').value;
-        const vmPC = document.getElementById('vmPC').value;
-        
-        if (!reason.trim()) {
-          alert('Reason is required.');
-          return;
-        }
-    
-        restartRemoteMachine(incidentNum, reason, vmUUID, vmPC)
-          .then(data => {
-            if (data.message.startsWith('Reboot Task Scheduled Successfully')) {
-              const taskUUID = data.message.split('Task UUID: ')[1];
-              closeRebootPrompt();// Close the reboot prompt
-              updateTaskStatus(taskUUID, vmPC)// Call updateTaskStatus with TaskUUID and vmPC
-            } else {
-              throw new Error('Failed to schedule reboot task');
-            }
-          })
-          .catch(error => {
-            console.error('Error: ' + error);
-            // Display the error in the taskStatusBox
-            document.getElementById('taskStatus' + vmPC).innerText = 'Error: ' + error;
-          });
-    
-      closeRebootPrompt();
-    }
-    
-    const form = document.getElementById('rebootForm');
-    form.addEventListener('submit', UserSubmit);
-    </script>
-    {% endblock %}
-    
+  })
+  .catch((error) => alert('Error: ' + error));
+}
+
+function UserSubmit(event) {
+  event.preventDefault();
+  const incidentNum = document.getElementById('incidentNum').value;
+  const reason = document.getElementById('reason').value;
+  const vmUUID = document.getElementById('vmUUID').value;
+  const vmPC = document.getElementById('vmPC').value;
+  
+  if (!reason.trim()) {
+    alert('Reason is required.');
+    return;
+  }
+  
+  restartRemoteMachine(incidentNum, reason, vmUUID, vmPC);
+}
+
+const form = document.getElementById('rebootForm');
+form.addEventListener('submit', UserSubmit);
+</script>
+{% endblock %}
