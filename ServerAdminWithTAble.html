@@ -1,0 +1,29 @@
+{% block content %}
+  <div class="table-responsive">
+    <table class="table table-striped table-bordered table-hover">
+      <caption>Servers</caption>
+      <thead>
+        <tr>
+          <th scope="col">VM Name</th>
+          <th scope="col">Site Name</th>
+          <th scope="col">Actions</th>
+          <th scope="col">Task Status</th> <!-- New Task Status Header -->
+        </tr>
+      </thead>
+      <tbody>
+        {% for vm_name, server_info in data.items() %}
+          <tr>
+            <td>{{ vm_name }}</td>
+            <td>{{ server_info.cluster }}</td>
+            <td>
+              <select class="actions-dropdown" data-vm-name="{{ vm_name }}" data-vm-uuid="{{ server_info.uuid }}" data-vm-pc="{{server_info.pc}}" onchange="UserAction(this)">
+                <option value="">Select action</option>
+                <option value="reboot">Reboot Server</option>
+              </select>
+            </td>
+            <td id="taskStatus-{{ server_info.uuid }}">Loading...</td> <!-- Placeholder for Task Status -->
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
